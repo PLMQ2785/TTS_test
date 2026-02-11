@@ -1,0 +1,24 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Output files
+output/
+voices/
+*.wav
+
+# Model weights (too large for git)
+Qwen3-TTS-12Hz-1.7B-Base/
+Qwen3-TTS-12Hz-1.7B-CustomVoice/
+Qwen3-TTS-12Hz-1.7B-VoiceDesign/
+Qwen3-TTS-Tokenizer-12Hz/
+
+# Lock file
+uv.lock

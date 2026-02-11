@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen3-TTS Test</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 480px;
+            background: linear-gradient(145deg, #1a1a2e, #16162a);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 36px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 28px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            background: #12121f;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 18px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #a78bfa;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(135deg, #7c3aed, #3b82f6);
+            color: #fff;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            display: none;
+        }
+
+        .status.loading {
+            display: block;
+            background: #1e1e3a;
+            color: #a78bfa;
+        }
+
+        .status.error {
+            display: block;
+            background: #2a1520;
+            color: #f87171;
+        }
+
+        .status.success {
+            display: block;
+            background: #152a1a;
+            color: #4ade80;
+        }
+
+        .audio-box {
+            margin-top: 16px;
+            display: none;
+        }
+
+        .audio-box audio {
+            width: 100%;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .timer {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>🎙 Qwen3-TTS</h1>
+        <p class="subtitle">Voice Clone Synthesize Test</p>
+
+        <label for="api">API Server</label>
+        <input id="api" type="text" value="http://210.182.182.205:8010">
+
+        <label for="voice">Voice</label>
+        <select id="voice">
+            <option value="">불러오는 중...</option>
+        </select>
+
+        <label for="text">Text</label>
+        <textarea id="text" placeholder="합성할 텍스트를 입력하세요...">안녕하세요, 음성 합성 테스트입니다.</textarea>
+
+        <label for="lang">Language</label>
+        <select id="lang">
+            <option value="auto">Auto</option>
+            <option value="korean" selected>Korean</option>
+            <option value="english">English</option>
+            <option value="chinese">Chinese</option>
+            <option value="japanese">Japanese</option>
+        </select>
+
+        <button class="btn" id="send" onclick="synthesize()">Synthesize ▶</button>
+
+        <div class="status" id="status"></div>
+
+        <div class="audio-box" id="audioBox">
+            <audio id="player" controls></audio>
+        </div>
+    </div>
+
+    <script>
+        async function loadVoices() {
+            const baseUrl = document.getElementById('api').value.trim();
+            const voiceSelect = document.getElementById('voice');
+            try {
+                const res = await fetch(`${baseUrl}/tts/voices`);
+                const data = await res.json();
+                voiceSelect.innerHTML = '';
+                data.voices.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.voice_id;
+                    opt.textContent = v.name;
+                    voiceSelect.appendChild(opt);
+                });
+            } catch (e) {
+                voiceSelect.innerHTML = '<option value="">⚠ 음성 목록 로드 실패</option>';
+            }
+        }
+
+        // API Server 변경 시 음성 목록 다시 로드
+        document.getElementById('api').addEventListener('change', loadVoices);
+
+        // 페이지 로드 시 음성 목록 가져오기
+        loadVoices();
+
+        async function synthesize() {
+            const btn = document.getElementById('send');
+            const status = document.getElementById('status');
+            const audioBox = document.getElementById('audioBox');
+            const player = document.getElementById('player');
+
+            const baseUrl = document.getElementById('api').value.trim();
+            const voiceId = document.getElementById('voice').value;
+            const text = document.getElementById('text').value.trim();
+            const lang = document.getElementById('lang').value;
+
+            if (!voiceId) { alert('음성을 선택하세요'); return; }
+            if (!text) { alert('텍스트를 입력하세요'); return; }
+
+            const url = `${baseUrl}/tts/voices/${voiceId}/synthesize`;
+
+            // Reset
+            btn.disabled = true;
+            audioBox.style.display = 'none';
+            player.src = '';
+            status.className = 'status loading';
+            status.style.display = 'block';
+
+            const t0 = performance.now();
+            const timer = setInterval(() => {
+                const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+                status.textContent = `⏳ 생성 중... ${elapsed}s`;
+            }, 100);
+
+            try {
+                const form = new FormData();
+                form.append('text', text);
+                form.append('language', lang);
+
+                const res = await fetch(url, { method: 'POST', body: form });
+
+                clearInterval(timer);
+                const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(`${res.status} — ${err}`);
+                }
+
+                const blob = await res.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                player.src = audioUrl;
+                audioBox.style.display = 'block';
+
+                status.className = 'status success';
+                status.textContent = `✅ 완료 — ${elapsed}s (${(blob.size / 1024).toFixed(0)} KB)`;
+                player.play();
+
+            } catch (e) {
+                clearInterval(timer);
+                status.className = 'status error';
+                status.textContent = `❌ ${e.message}`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
+    current_model: str | None = None
     queue_pending: int = 0
 
 
@@ -24,4 +25,15 @@ class VoiceInfo(BaseModel):
 
 class VoiceListResponse(BaseModel):
     voices: list[VoiceInfo]
+    total: int
+
+
+class SpeakerInfo(BaseModel):
+    name: str
+    description: str
+    native_language: str
+
+
+class SpeakerListResponse(BaseModel):
+    speakers: list[SpeakerInfo]
     total: int

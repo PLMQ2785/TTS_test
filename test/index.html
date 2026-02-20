@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qwen3-TTS Test</title>
+    <title>Qwen3-TTS Multi-Model Test</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         * {
             margin: 0;
@@ -20,42 +20,88 @@
             color: #e0e0e0;
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            padding: 32px 16px;
         }
 
         .container {
-            width: 480px;
+            width: 540px;
             background: linear-gradient(145deg, #1a1a2e, #16162a);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 16px;
-            padding: 36px;
+            padding: 32px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
         h1 {
             font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 6px;
+            font-weight: 700;
+            margin-bottom: 4px;
             background: linear-gradient(135deg, #a78bfa, #60a5fa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: #666;
-            margin-bottom: 28px;
+            margin-bottom: 20px;
         }
 
+        /* ── API field ── */
+        .api-row {
+            margin-bottom: 18px;
+        }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 10px 14px;
+            border: none;
+            background: none;
+            color: #888;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: #bbb;
+        }
+
+        .tab-btn.active {
+            color: #a78bfa;
+            border-bottom-color: #a78bfa;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* ── Form elements ── */
         label {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 500;
             color: #888;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
 
         input,
@@ -65,13 +111,13 @@
             background: #12121f;
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 10px;
-            padding: 12px 14px;
+            padding: 11px 13px;
             color: #e0e0e0;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             outline: none;
             transition: border-color 0.2s;
-            margin-bottom: 18px;
+            margin-bottom: 14px;
         }
 
         input:focus,
@@ -82,7 +128,7 @@
 
         textarea {
             resize: vertical;
-            min-height: 90px;
+            min-height: 80px;
         }
 
         select {
@@ -90,13 +136,20 @@
             appearance: none;
         }
 
+        .hint {
+            font-size: 0.7rem;
+            color: #555;
+            margin-top: -10px;
+            margin-bottom: 12px;
+        }
+
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 13px;
             border: none;
             border-radius: 10px;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -120,10 +173,10 @@
         }
 
         .status {
-            margin-top: 16px;
-            padding: 12px 14px;
+            margin-top: 14px;
+            padding: 11px 13px;
             border-radius: 10px;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             display: none;
         }
 
@@ -146,7 +199,7 @@
         }
 
         .audio-box {
-            margin-top: 16px;
+            margin-top: 14px;
             display: none;
         }
 
@@ -156,8 +209,14 @@
             outline: none;
         }
 
-        .timer {
-            font-variant-numeric: tabular-nums;
+        .model-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(167, 139, 250, 0.15);
+            color: #a78bfa;
+            margin-bottom: 14px;
         }
     </style>
 </head>
@@ -166,80 +225,165 @@
 
     <div class="container">
         <h1>🎙 Qwen3-TTS</h1>
-        <p class="subtitle">Voice Clone Synthesize Test</p>
+        <p class="subtitle">Multi-Model TTS Test</p>
 
-        <label for="api">API Server</label>
-        <input id="api" type="text" value="http://210.182.182.205:8010">
+        <div class="api-row">
+            <label for="api">API Server</label>
+            <input id="api" type="text" value="http://210.182.182.205:8010">
+        </div>
 
-        <label for="voice">Voice</label>
-        <select id="voice">
-            <option value="">불러오는 중...</option>
-        </select>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('clone')">Voice Clone</button>
+            <button class="tab-btn" onclick="switchTab('design')">Voice Design</button>
+            <button class="tab-btn" onclick="switchTab('custom')">Custom Voice</button>
+        </div>
 
-        <label for="text">Text</label>
-        <textarea id="text" placeholder="합성할 텍스트를 입력하세요...">안녕하세요, 음성 합성 테스트입니다.</textarea>
+        <!-- ═══ Voice Clone Tab ═══ -->
+        <div id="tab-clone" class="tab-panel active">
+            <span class="model-badge">Base Model</span>
 
-        <label for="lang">Language</label>
-        <select id="lang">
-            <option value="auto">Auto</option>
-            <option value="korean" selected>Korean</option>
-            <option value="english">English</option>
-            <option value="chinese">Chinese</option>
-            <option value="japanese">Japanese</option>
-        </select>
+            <label for="clone-voice">Saved Voice</label>
+            <select id="clone-voice">
+                <option value="">불러오는 중...</option>
+            </select>
 
-        <button class="btn" id="send" onclick="synthesize()">Synthesize ▶</button>
+            <label for="clone-text">Text</label>
+            <textarea id="clone-text" placeholder="합성할 텍스트를 입력하세요...">안녕하세요, 음성 합성 테스트입니다.</textarea>
+
+            <label for="clone-lang">Language</label>
+            <select id="clone-lang">
+                <option value="Auto">Auto</option>
+                <option value="Korean" selected>Korean</option>
+                <option value="English">English</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+            </select>
+
+            <button class="btn" onclick="synthesizeClone()">Synthesize ▶</button>
+        </div>
+
+        <!-- ═══ Voice Design Tab ═══ -->
+        <div id="tab-design" class="tab-panel">
+            <span class="model-badge">VoiceDesign Model</span>
+
+            <label for="design-instruct">Voice Description (Instruct)</label>
+            <textarea id="design-instruct"
+                placeholder="음색과 스타일을 자연어로 기술하세요...">밝고 활기찬 젊은 여성 목소리, 빠르고 경쾌하게 말하기</textarea>
+            <p class="hint">예: "낮은 톤의 차분한 남성 목소리", "Excited young male with high pitch"</p>
+
+            <label for="design-text">Text</label>
+            <textarea id="design-text" placeholder="합성할 텍스트를 입력하세요...">안녕하세요, 음성 디자인 테스트입니다.</textarea>
+
+            <label for="design-lang">Language</label>
+            <select id="design-lang">
+                <option value="Auto">Auto</option>
+                <option value="Korean" selected>Korean</option>
+                <option value="English">English</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+            </select>
+
+            <button class="btn" onclick="synthesizeDesign()">Design & Speak ▶</button>
+        </div>
+
+        <!-- ═══ Custom Voice Tab ═══ -->
+        <div id="tab-custom" class="tab-panel">
+            <span class="model-badge">CustomVoice Model</span>
+
+            <label for="custom-speaker">Speaker</label>
+            <select id="custom-speaker">
+                <option value="">불러오는 중...</option>
+            </select>
+
+            <label for="custom-instruct">Style Instruct (Optional)</label>
+            <textarea id="custom-instruct" rows="2" placeholder="스타일 지시를 입력하세요 (선택)"></textarea>
+            <p class="hint">예: "빠르게 말하기", "슬프고 낮은 톤으로", "Very excited and energetic"</p>
+
+            <label for="custom-text">Text</label>
+            <textarea id="custom-text" placeholder="합성할 텍스트를 입력하세요...">안녕하세요, 커스텀 보이스 테스트입니다.</textarea>
+
+            <label for="custom-lang">Language</label>
+            <select id="custom-lang">
+                <option value="Auto">Auto</option>
+                <option value="Korean" selected>Korean</option>
+                <option value="English">English</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+            </select>
+
+            <button class="btn" onclick="synthesizeCustom()">Synthesize ▶</button>
+        </div>
 
         <div class="status" id="status"></div>
-
         <div class="audio-box" id="audioBox">
             <audio id="player" controls></audio>
         </div>
     </div>
 
     <script>
+        const $ = id => document.getElementById(id);
+        const baseUrl = () => $('api').value.trim();
+
+        // ── Tab switching ─────────────────────────────────────────────
+        function switchTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            $('tab-' + name).classList.add('active');
+        }
+
+        // ── Load voices ───────────────────────────────────────────────
         async function loadVoices() {
-            const baseUrl = document.getElementById('api').value.trim();
-            const voiceSelect = document.getElementById('voice');
+            const sel = $('clone-voice');
             try {
-                const res = await fetch(`${baseUrl}/tts/voices`);
+                const res = await fetch(`${baseUrl()}/tts/voices`);
                 const data = await res.json();
-                voiceSelect.innerHTML = '';
+                sel.innerHTML = '';
+                if (data.voices.length === 0) {
+                    sel.innerHTML = '<option value="">등록된 음성 없음</option>';
+                    return;
+                }
                 data.voices.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v.voice_id;
                     opt.textContent = v.name;
-                    voiceSelect.appendChild(opt);
+                    sel.appendChild(opt);
                 });
             } catch (e) {
-                voiceSelect.innerHTML = '<option value="">⚠ 음성 목록 로드 실패</option>';
+                sel.innerHTML = '<option value="">⚠ 음성 목록 로드 실패</option>';
             }
         }
 
-        // API Server 변경 시 음성 목록 다시 로드
-        document.getElementById('api').addEventListener('change', loadVoices);
+        // ── Load speakers ─────────────────────────────────────────────
+        async function loadSpeakers() {
+            const sel = $('custom-speaker');
+            try {
+                const res = await fetch(`${baseUrl()}/tts/speakers`);
+                const data = await res.json();
+                sel.innerHTML = '';
+                data.speakers.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.textContent = `${s.name} — ${s.description}`;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                sel.innerHTML = '<option value="">⚠ 스피커 목록 로드 실패</option>';
+            }
+        }
 
-        // 페이지 로드 시 음성 목록 가져오기
+        $('api').addEventListener('change', () => { loadVoices(); loadSpeakers(); });
         loadVoices();
+        loadSpeakers();
 
-        async function synthesize() {
-            const btn = document.getElementById('send');
-            const status = document.getElementById('status');
-            const audioBox = document.getElementById('audioBox');
-            const player = document.getElementById('player');
+        // ── Common request helper ─────────────────────────────────────
+        async function doRequest(url, formData) {
+            const status = $('status');
+            const audioBox = $('audioBox');
+            const player = $('player');
 
-            const baseUrl = document.getElementById('api').value.trim();
-            const voiceId = document.getElementById('voice').value;
-            const text = document.getElementById('text').value.trim();
-            const lang = document.getElementById('lang').value;
-
-            if (!voiceId) { alert('음성을 선택하세요'); return; }
-            if (!text) { alert('텍스트를 입력하세요'); return; }
-
-            const url = `${baseUrl}/tts/voices/${voiceId}/synthesize`;
-
-            // Reset
-            btn.disabled = true;
+            // Disable all buttons
+            document.querySelectorAll('.btn').forEach(b => b.disabled = true);
             audioBox.style.display = 'none';
             player.src = '';
             status.className = 'status loading';
@@ -252,12 +396,7 @@
             }, 100);
 
             try {
-                const form = new FormData();
-                form.append('text', text);
-                form.append('language', lang);
-
-                const res = await fetch(url, { method: 'POST', body: form });
-
+                const res = await fetch(url, { method: 'POST', body: formData });
                 clearInterval(timer);
                 const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
 
@@ -267,21 +406,64 @@
                 }
 
                 const blob = await res.blob();
-                const audioUrl = URL.createObjectURL(blob);
-                player.src = audioUrl;
+                player.src = URL.createObjectURL(blob);
                 audioBox.style.display = 'block';
-
                 status.className = 'status success';
                 status.textContent = `✅ 완료 — ${elapsed}s (${(blob.size / 1024).toFixed(0)} KB)`;
                 player.play();
-
             } catch (e) {
                 clearInterval(timer);
                 status.className = 'status error';
                 status.textContent = `❌ ${e.message}`;
             } finally {
-                btn.disabled = false;
+                document.querySelectorAll('.btn').forEach(b => b.disabled = false);
             }
+        }
+
+        // ── Voice Clone ───────────────────────────────────────────────
+        function synthesizeClone() {
+            const voiceId = $('clone-voice').value;
+            if (!voiceId) { alert('음성을 선택하세요'); return; }
+            const text = $('clone-text').value.trim();
+            if (!text) { alert('텍스트를 입력하세요'); return; }
+
+            const form = new FormData();
+            form.append('text', text);
+            form.append('language', $('clone-lang').value);
+
+            doRequest(`${baseUrl()}/tts/voices/${voiceId}/synthesize`, form);
+        }
+
+        // ── Voice Design ──────────────────────────────────────────────
+        function synthesizeDesign() {
+            const text = $('design-text').value.trim();
+            const instruct = $('design-instruct').value.trim();
+            if (!text) { alert('텍스트를 입력하세요'); return; }
+            if (!instruct) { alert('Voice Description을 입력하세요'); return; }
+
+            const form = new FormData();
+            form.append('text', text);
+            form.append('instruct', instruct);
+            form.append('language', $('design-lang').value);
+
+            doRequest(`${baseUrl()}/tts/voice-design`, form);
+        }
+
+        // ── Custom Voice ──────────────────────────────────────────────
+        function synthesizeCustom() {
+            const speaker = $('custom-speaker').value;
+            if (!speaker) { alert('스피커를 선택하세요'); return; }
+            const text = $('custom-text').value.trim();
+            if (!text) { alert('텍스트를 입력하세요'); return; }
+
+            const form = new FormData();
+            form.append('text', text);
+            form.append('speaker', speaker);
+            form.append('language', $('custom-lang').value);
+            const instruct = $('custom-instruct').value.trim();
+            if (instruct) form.append('instruct', instruct);
+
+            doRequest(`${baseUrl()}/tts/custom-voice`, form);
         }
     </script>
 

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TTSJob:
     """A single TTS inference job."""
-    func: Callable
+    func: Callable          # Can be sync or async callable
     kwargs: dict = field(default_factory=dict)
     future: asyncio.Future = field(default_factory=lambda: asyncio.get_running_loop().create_future())
 
@@ -29,7 +29,13 @@ class TTSQueue:
         queue = TTSQueue(max_workers=1)
         tasks = queue.start_workers()
 
-        # In endpoint:
+        # Submit an async callable (recommended for model-manager pattern):
+        async def my_job():
+            model = await model_manager.get_model(ModelType.BASE)
+            return model.generate_voice_clone(text=..., language=...)
+        result = await queue.submit(my_job)
+
+        # Or submit a sync function with kwargs (legacy):
         result = await queue.submit(model.generate_voice_clone, text=..., language=...)
 
         # On shutdown:
@@ -65,6 +71,7 @@ class TTSQueue:
     # ── lifecycle ───────────────────────────────────────────────────
 
     def start_workers(self) -> list[asyncio.Task]:
+        
         """Spawn worker tasks. Returns list of tasks (keep reference for shutdown)."""
         tasks = []
         for i in range(self._max_workers):
@@ -91,7 +98,14 @@ class TTSQueue:
                 job = await self._queue.get()
                 try:
                     logger.info("Worker-%d processing job (remaining=%d)", worker_id, self._queue.qsize())
-                    result = await asyncio.to_thread(job.func, **job.kwargs)
+
+                    if asyncio.iscoroutinefunction(job.func) or asyncio.iscoroutine(job.func):
+                        # Async callable (e.g. closure with model_manager.get_model)
+                        result = await job.func(**job.kwargs)
+                    else:
+                        # Sync callable — run in thread
+                        result = await asyncio.to_thread(job.func, **job.kwargs)
+
                     job.future.set_result(result)
                 except Exception as exc:
                     job.future.set_exception(exc)
@@ -99,4 +113,3 @@ class TTSQueue:
                     self._queue.task_done()
         except asyncio.CancelledError:
             logger.info("TTS worker-%d stopped", worker_id)
-

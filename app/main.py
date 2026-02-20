@@ -1,14 +1,13 @@
-"""Qwen3-TTS Voice Clone Demo API Server."""
+"""Qwen3-TTS Multi-Model API Server."""
 
 import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-import torch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from qwen_tts import Qwen3TTSModel
 
+from app.model_manager import ModelManager, ModelType
 from app.queue_worker import TTSQueue
 from app.routers import tts
 from app.schemas import HealthResponse
@@ -19,22 +18,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-MODEL_PATH = "./Qwen3-TTS-12Hz-1.7B-Base"
-MAX_WORKERS = 1  # 1 = sequential, N = up to N concurrent TTS jobs
+MAX_WORKERS = 1  # 1 = sequential (required for on-demand model swapping)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load model on startup, release on shutdown."""
-    logger.info("Loading Qwen3-TTS model from %s ...", MODEL_PATH)
-    model = Qwen3TTSModel.from_pretrained(
-        MODEL_PATH,
-        device_map="cuda:1",
-        dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",
-    )
-    app.state.model = model
-    logger.info("Model loaded successfully.")
+    """Load model manager on startup, release on shutdown."""
+    # Initialize model manager and preload Base model
+    model_manager = ModelManager(device="cuda:1")
+    await model_manager.preload(ModelType.BASE)
+    app.state.model_manager = model_manager
 
     # Start TTS queue worker(s)
     tts_queue = TTSQueue(max_workers=MAX_WORKERS)
@@ -47,16 +40,15 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down — stopping workers ...")
     await TTSQueue.stop(worker_tasks)
 
-    logger.info("Releasing model ...")
-    app.state.model = None
-    torch.cuda.empty_cache()
-    logger.info("Model released.")
+    logger.info("Releasing models ...")
+    await model_manager.shutdown()
+    logger.info("Shutdown complete.")
 
 
 app = FastAPI(
-    title="Qwen3-TTS Voice Clone API",
-    description="Upload reference audio and synthesize speech that clones the voice.",
-    version="0.1.0",
+    title="Qwen3-TTS API",
+    description="Multi-model TTS API: Voice Clone, Voice Design, Custom Voice with instruct-based style control.",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -76,8 +68,15 @@ app.include_router(tts.router)
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 async def health():
     """Health check endpoint."""
-    model_loaded = hasattr(app.state, "model") and app.state.model is not None
+    mm = getattr(app.state, "model_manager", None)
+    model_loaded = mm is not None and mm.is_loaded
+    current_model = mm.current_model_type.value if mm and mm.current_model_type else None
     queue_pending = 0
     if hasattr(app.state, "tts_queue"):
         queue_pending = app.state.tts_queue.pending_count
-    return HealthResponse(status="ok", model_loaded=model_loaded, queue_pending=queue_pending)
+    return HealthResponse(
+        status="ok",
+        model_loaded=model_loaded,
+        current_model=current_model,
+        queue_pending=queue_pending,
+    )

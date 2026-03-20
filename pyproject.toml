@@ -3,7 +3,7 @@ name = "qwen3-tts-custom"
 version = "0.1.0"
 description = "Qwen3-TTS Custom Project with CUDA 13.0"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12, <3.13"
 dependencies = [
     "modelscope>=1.34.0",
     "torch",

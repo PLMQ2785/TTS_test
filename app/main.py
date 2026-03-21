@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import torch
@@ -19,19 +20,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-MODEL_PATH = "./Qwen3-TTS-12Hz-1.7B-Base"
-MAX_WORKERS = 1  # 1 = sequential, N = up to N concurrent TTS jobs
+MODEL_PATH = os.getenv("MODEL_PATH", "./Qwen3-TTS-12Hz-1.7B-Base")
+DEVICE_MAP = os.getenv("DEVICE_MAP", "cuda:0")
+ATTN_IMPLEMENTATION = os.getenv("ATTN_IMPLEMENTATION", "flash_attention_2")
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", "1"))  # 1 = sequential, N = up to N concurrent TTS jobs
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load model on startup, release on shutdown."""
-    logger.info("Loading Qwen3-TTS model from %s ...", MODEL_PATH)
+    logger.info(
+        "Loading Qwen3-TTS model from %s with device=%s attn=%s ...",
+        MODEL_PATH,
+        DEVICE_MAP,
+        ATTN_IMPLEMENTATION,
+    )
     model = Qwen3TTSModel.from_pretrained(
         MODEL_PATH,
-        device_map="cuda:1",
+        device_map=DEVICE_MAP,
         dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",
+        attn_implementation=ATTN_IMPLEMENTATION,
     )
     app.state.model = model
     logger.info("Model loaded successfully.")
@@ -49,7 +57,8 @@ async def lifespan(app: FastAPI):
 
     logger.info("Releasing model ...")
     app.state.model = None
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     logger.info("Model released.")
 
 

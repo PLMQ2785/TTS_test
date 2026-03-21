@@ -4,6 +4,64 @@
 
 ## 빠른 시작
 
+### Docker Compose 권장
+
+`flash-attn` 빌드 시간을 매번 로컬 설치에 쓰지 않도록, 아키텍처별 Docker 이미지 빌드를 지원합니다.
+
+GPU별 권장 env 파일:
+
+| GPU | 아키텍처 | env 파일 |
+|------|---------|----------|
+| RTX 3060 / 3090 | Ampere (sm86) | `.env.docker.sm86` |
+| RTX 4090 | Ada (sm89) | `.env.docker.sm89` |
+| RTX 5090 | Blackwell (sm120) | `.env.docker.sm120` |
+
+최초 1회 빌드 + 실행:
+
+```bash
+docker compose --env-file .env.docker.sm86 up -d --build
+```
+
+이미지만 먼저 빌드할 때:
+
+```bash
+./build_docker.sh sm86
+```
+
+전체 아키텍처 이미지를 한 번에 빌드할 때:
+
+```bash
+./build_docker.sh all
+```
+
+중지/삭제:
+
+```bash
+docker compose --env-file .env.docker.sm86 down
+```
+
+다시 실행만 할 때:
+
+```bash
+docker compose --env-file .env.docker.sm86 up -d
+```
+
+사전 요구사항:
+1. Docker Engine / Docker Compose
+2. NVIDIA 드라이버
+3. NVIDIA Container Toolkit
+
+기본 설정:
+1. `flash-attn`은 선택한 `TORCH_CUDA_ARCH_LIST`로 이미지 빌드 시 한 번만 컴파일
+2. 모델 파일은 이미지에 넣지 않고, 현재 프로젝트 디렉터리를 컨테이너에 읽기 전용 마운트
+3. 등록된 음성 데이터는 `./voices` 볼륨에 유지
+
+필요하면 `.env.docker.sm86` 등의 값을 수정해서 `MODEL_PATH`, `PORT`, `CUDA_VISIBLE_DEVICES`를 바꿀 수 있습니다.
+
+### 로컬 실행
+
+Docker를 쓰지 않을 경우 기존 방식대로 실행할 수 있습니다.
+
 ```bash
 # 서버 실행 (uv 설치/환경 확인 자동 처리)
 ./run_server.sh

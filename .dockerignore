@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.pyc
+benchmark_results
+sample
+test
+voices
+Qwen3-TTS-12Hz-0.6B-Base
+Qwen3-TTS-12Hz-0.6B-CustomVoice
+Qwen3-TTS-12Hz-1.7B-Base
+Qwen3-TTS-12Hz-1.7B-CustomVoice
+Qwen3-TTS-12Hz-1.7B-VoiceDesign
+Qwen3-TTS-Tokenizer-12Hz

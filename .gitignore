@@ -14,11 +14,16 @@ output/
 voices/
 *.wav
 
-# Model weights (too large for git)
-Qwen3-TTS-12Hz-1.7B-Base/
-Qwen3-TTS-12Hz-1.7B-CustomVoice/
-Qwen3-TTS-12Hz-1.7B-VoiceDesign/
-Qwen3-TTS-Tokenizer-12Hz/
+# Model weights and local assets (too large for git)
+Qwen*/
+sample/
+benchmark_results/
 
 # Lock file
 uv.lock
+
+# Docker local artifacts
+.buildx-cache/
+.docker/
+docker-image*.tar
+docker-image*.tar.gz

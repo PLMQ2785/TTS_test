@@ -33,14 +33,14 @@ WORKDIR /app
 
 COPY pyproject.toml README.md ./
 COPY install_flash_attn.sh ./install_flash_attn.sh
+COPY wheelhouse ./wheelhouse
 
-ARG TORCH_CUDA_ARCH_LIST=8.6
-ENV TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}
-ARG MAX_JOBS=2
-ENV MAX_JOBS=${MAX_JOBS}
+ARG FLASH_ATTN_WHEEL_ARCH=sm86
+ENV FLASH_ATTN_WHEEL_ARCH=${FLASH_ATTN_WHEEL_ARCH}
 
 RUN uv sync --active --no-install-project
-RUN chmod +x ./install_flash_attn.sh && ./install_flash_attn.sh
+RUN chmod +x ./install_flash_attn.sh && \
+    FLASH_ATTN_WHEEL_DIR=/app/wheelhouse ./install_flash_attn.sh
 
 COPY app ./app
 COPY main.py ./main.py

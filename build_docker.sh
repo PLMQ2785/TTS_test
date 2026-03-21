@@ -14,7 +14,6 @@ Usage:
 
 Options:
   --no-cache   Build without Docker layer cache
-  --max-jobs N Set MAX_JOBS for flash-attn build
   -h, --help   Show this help message
 
 GPU mapping:
@@ -38,20 +37,11 @@ TARGET="${1:-sm86}"
 shift || true
 
 NO_CACHE_ARGS=()
-MAX_JOBS_VALUE="${MAX_JOBS:-2}"
 
 while (($# > 0)); do
     case "$1" in
         --no-cache)
             NO_CACHE_ARGS+=(--no-cache)
-            ;;
-        --max-jobs)
-            shift
-            if (($# == 0)); then
-                echo "--max-jobs requires a value."
-                exit 1
-            fi
-            MAX_JOBS_VALUE="$1"
             ;;
         -h|--help)
             usage
@@ -70,14 +60,24 @@ done
 build_one() {
     local arch="$1"
     local env_file=".env.docker.${arch}"
+    local wheel_dir="wheelhouse/${arch}"
+    local wheel_path
 
     if [[ ! -f "${env_file}" ]]; then
         echo "Missing env file: ${env_file}"
         exit 1
     fi
 
+    wheel_path="$(find "${wheel_dir}" -maxdepth 1 -type f -name 'flash_attn-*.whl' | sort | tail -n 1)"
+
+    if [[ -z "${wheel_path}" ]]; then
+        echo "flash-attn wheel이 없습니다: ${wheel_dir}"
+        echo "먼저 ./build_flash_attn_wheel.sh ${arch} 를 실행해 주세요."
+        exit 1
+    fi
+
     echo "Building image for ${arch} using ${env_file} ..."
-    MAX_JOBS="${MAX_JOBS_VALUE}" docker compose --env-file "${env_file}" build "${NO_CACHE_ARGS[@]}" --build-arg MAX_JOBS="${MAX_JOBS_VALUE}" api
+    docker compose --env-file "${env_file}" build "${NO_CACHE_ARGS[@]}" api
 }
 
 case "${TARGET}" in

@@ -77,6 +77,16 @@ TARGET="${TARGET:-sm86}"
 
 uv sync
 
+if [ ! -x ".venv/bin/python" ]; then
+    echo "프로젝트 가상환경을 찾을 수 없습니다. uv sync가 정상적으로 완료되었는지 확인해 주세요."
+    exit 1
+fi
+
+if ! .venv/bin/python -m pip --version >/dev/null 2>&1; then
+    echo "가상환경에 pip가 없어 ensurepip로 설치합니다..."
+    .venv/bin/python -m ensurepip --upgrade
+fi
+
 build_one() {
     local arch="$1"
     local env_file=".env.docker.${arch}"
@@ -99,7 +109,7 @@ build_one() {
     echo "Building flash-attn wheel for ${arch} (TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}) ..."
     MAX_JOBS="${MAX_JOBS_VALUE}" \
     TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}" \
-    uv run --with pip python -m pip wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
+    .venv/bin/python -m pip wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
 }
 
 case "${TARGET}" in

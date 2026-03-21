@@ -29,12 +29,10 @@ if ! command -v uv >/dev/null 2>&1; then
     exit 1
 fi
 
-TARGET="${1:-sm86}"
-shift || true
-
 MAX_JOBS_VALUE="${MAX_JOBS:-2}"
 FORCE_BUILD=0
 FLASH_ATTN_SPEC="${FLASH_ATTN_SPEC:-flash-attn>=2.8.3}"
+TARGET=""
 
 while (($# > 0)); do
     case "$1" in
@@ -53,6 +51,13 @@ while (($# > 0)); do
             usage
             exit 0
             ;;
+        sm86|sm89|sm120|all)
+            if [[ -n "${TARGET}" ]]; then
+                echo "Target can only be specified once."
+                exit 1
+            fi
+            TARGET="$1"
+            ;;
         *)
             echo "Unknown option: $1"
             echo
@@ -68,20 +73,7 @@ if ! [[ "${MAX_JOBS_VALUE}" =~ ^[0-9]+$ ]] || [ "${MAX_JOBS_VALUE}" -lt 1 ]; the
     exit 1
 fi
 
-case "${TARGET}" in
-    -h|--help)
-        usage
-        exit 0
-        ;;
-    sm86|sm89|sm120|all)
-        ;;
-    *)
-        echo "Unknown target: ${TARGET}"
-        echo
-        usage
-        exit 1
-        ;;
-esac
+TARGET="${TARGET:-sm86}"
 
 uv sync
 
@@ -107,7 +99,7 @@ build_one() {
     echo "Building flash-attn wheel for ${arch} (TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}) ..."
     MAX_JOBS="${MAX_JOBS_VALUE}" \
     TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}" \
-    uv pip wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
+    uv run python -m pip wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
 }
 
 case "${TARGET}" in

@@ -99,7 +99,7 @@ build_one() {
     echo "Building flash-attn wheel for ${arch} (TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}) ..."
     MAX_JOBS="${MAX_JOBS_VALUE}" \
     TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}" \
-    uv run python -m pip wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
+    uv run --with pip python -m pip wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
 }
 
 case "${TARGET}" in

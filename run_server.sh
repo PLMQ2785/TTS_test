@@ -10,7 +10,7 @@ cd "$SCRIPT_DIR"
 
 # ── 설정값 ──
 DEFAULT_PORT=8000
-DEFAULT_WHEEL_ARCH=sm86
+DEFAULT_MAX_JOBS=2
 
 # ── 1. uv 설치 확인 ──
 if ! command -v uv &>/dev/null; then
@@ -39,13 +39,19 @@ uv sync
 echo "기본 의존성 동기화 완료."
 
 # ── 3. flash-attn 설치 여부 확인 ──
-read -rp "prebuilt flash-attn wheel을 설치할까요? [Y/n]: " INSTALL_FLASH
+read -rp "flash-attn을 별도 설치할까요? [Y/n]: " INSTALL_FLASH
 INSTALL_FLASH="${INSTALL_FLASH:-Y}"
 
 if [[ "$INSTALL_FLASH" =~ ^[Yy]$ ]]; then
-    read -rp "wheel 아키텍처를 입력하세요 [기본: ${DEFAULT_WHEEL_ARCH}]: " USER_WHEEL_ARCH
-    WHEEL_ARCH="${USER_WHEEL_ARCH:-$DEFAULT_WHEEL_ARCH}"
-    FLASH_ATTN_WHEEL_ARCH="$WHEEL_ARCH" ./install_flash_attn.sh
+    read -rp "MAX_JOBS 값을 입력하세요 [기본: ${DEFAULT_MAX_JOBS}]: " USER_MAX_JOBS
+    MAX_JOBS_VALUE="${USER_MAX_JOBS:-$DEFAULT_MAX_JOBS}"
+
+    if ! [[ "$MAX_JOBS_VALUE" =~ ^[0-9]+$ ]] || [ "$MAX_JOBS_VALUE" -lt 1 ]; then
+        echo "유효하지 않은 MAX_JOBS 값: $MAX_JOBS_VALUE"
+        exit 1
+    fi
+
+    MAX_JOBS="$MAX_JOBS_VALUE" ./install_flash_attn.sh
 else
     echo "flash-attn 설치를 건너뜁니다."
 fi

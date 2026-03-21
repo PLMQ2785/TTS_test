@@ -6,8 +6,8 @@
 
 ### Docker Compose 권장
 
-`flash-attn` 빌드 시간을 매번 Docker 이미지 안에서 쓰지 않도록, wheel을 미리 빌드한 뒤 이미지에서는 wheel만 설치합니다.
-기본 Python 의존성과 `flash-attn` wheel 빌드를 분리해서 관리합니다.
+`flash-attn` 설치 시간을 매번 로컬 설치에 쓰지 않도록, 아키텍처별 Docker 이미지 빌드를 지원합니다.
+기본 Python 의존성과 `flash-attn` 빌드를 분리해서 관리합니다.
 
 GPU별 권장 env 파일:
 
@@ -20,7 +20,6 @@ GPU별 권장 env 파일:
 최초 1회 빌드 + 실행:
 
 ```bash
-./build_flash_attn_wheel.sh sm86
 docker compose --env-file .env.docker.sm86 up -d --build
 ```
 
@@ -30,16 +29,16 @@ docker compose --env-file .env.docker.sm86 up -d --build
 ./build_docker.sh sm86
 ```
 
-`flash-attn` wheel만 먼저 빌드할 때:
+전체 아키텍처 이미지를 한 번에 빌드할 때:
 
 ```bash
-./build_flash_attn_wheel.sh all
+./build_docker.sh all
 ```
 
-wheel 빌드 병렬도 조정:
+`flash-attn` 빌드 병렬도 조정:
 
 ```bash
-./build_flash_attn_wheel.sh sm86 --max-jobs 2
+./build_docker.sh sm86 --max-jobs 2
 ```
 
 중지/삭제:
@@ -60,7 +59,7 @@ docker compose --env-file .env.docker.sm86 up -d
 3. NVIDIA Container Toolkit
 
 기본 설정:
-1. `flash-attn`은 선택한 `TORCH_CUDA_ARCH_LIST`로 wheelhouse에 미리 컴파일
+1. `flash-attn`은 선택한 `TORCH_CUDA_ARCH_LIST`로 이미지 빌드 시 컴파일
 2. 모델 파일은 이미지에 넣지 않고, 현재 프로젝트 디렉터리를 컨테이너에 읽기 전용 마운트
 3. 등록된 음성 데이터는 `./voices` 볼륨에 유지
 
@@ -78,7 +77,7 @@ Docker를 쓰지 않을 경우 기존 방식대로 실행할 수 있습니다.
 스크립트가 자동으로:
 1. `uv` 설치 여부 확인 (없으면 설치)
 2. 기본 의존성 동기화 (`uv sync`)
-3. 필요 시 prebuilt `flash-attn` wheel 설치
+3. 필요 시 `flash-attn` 직접 빌드 설치
 4. 서버 포트 입력 받아 실행
 
 ## API 사용법

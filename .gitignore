@@ -27,6 +27,3 @@ uv.lock
 .docker/
 docker-image*.tar
 docker-image*.tar.gz
-
-# Local wheel artifacts
-wheelhouse/

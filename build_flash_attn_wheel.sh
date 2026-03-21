@@ -109,7 +109,8 @@ build_one() {
     echo "Building flash-attn wheel for ${arch} (TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}) ..."
     MAX_JOBS="${MAX_JOBS_VALUE}" \
     TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}" \
-    .venv/bin/python -m pip wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
+    PIP_CONFIG_FILE=/dev/null \
+    .venv/bin/python -m pip --isolated wheel --no-build-isolation --no-deps "${FLASH_ATTN_SPEC}" -w "${wheel_dir}"
 }
 
 case "${TARGET}" in

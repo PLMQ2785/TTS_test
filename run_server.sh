@@ -10,7 +10,7 @@ cd "$SCRIPT_DIR"
 
 # ── 설정값 ──
 DEFAULT_PORT=8000
-DEFAULT_MAX_JOBS=1
+DEFAULT_MAX_JOBS=2
 
 # ── 1. uv 설치 확인 ──
 if ! command -v uv &>/dev/null; then

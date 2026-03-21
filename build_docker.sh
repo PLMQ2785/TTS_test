@@ -38,7 +38,7 @@ TARGET="${1:-sm86}"
 shift || true
 
 NO_CACHE_ARGS=()
-MAX_JOBS_VALUE="${MAX_JOBS:-8}"
+MAX_JOBS_VALUE="${MAX_JOBS:-2}"
 
 while (($# > 0)); do
     case "$1" in

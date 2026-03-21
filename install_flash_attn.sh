@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
 FLASH_ATTN_SPEC="${FLASH_ATTN_SPEC:-flash-attn>=2.8.3}"
-MAX_JOBS_VALUE="${2}"
+MAX_JOBS_VALUE="${MAX_JOBS:-2}"
 FORCE_REINSTALL="${FORCE_REINSTALL_FLASH_ATTN:-0}"
 
 if ! [[ "${MAX_JOBS_VALUE}" =~ ^[0-9]+$ ]] || [ "${MAX_JOBS_VALUE}" -lt 1 ]; then

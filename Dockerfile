@@ -36,7 +36,7 @@ COPY install_flash_attn.sh ./install_flash_attn.sh
 
 ARG TORCH_CUDA_ARCH_LIST=8.6
 ENV TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}
-ARG MAX_JOBS=8
+ARG MAX_JOBS=2
 ENV MAX_JOBS=${MAX_JOBS}
 
 RUN uv sync --active --no-install-project

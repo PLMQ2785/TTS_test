@@ -14,6 +14,7 @@ Usage:
 
 Options:
   --no-cache   Build without Docker layer cache
+  --max-jobs N Set MAX_JOBS for flash-attn build
   -h, --help   Show this help message
 
 GPU mapping:
@@ -37,11 +38,20 @@ TARGET="${1:-sm86}"
 shift || true
 
 NO_CACHE_ARGS=()
+MAX_JOBS_VALUE="${MAX_JOBS:-8}"
 
 while (($# > 0)); do
     case "$1" in
         --no-cache)
             NO_CACHE_ARGS+=(--no-cache)
+            ;;
+        --max-jobs)
+            shift
+            if (($# == 0)); then
+                echo "--max-jobs requires a value."
+                exit 1
+            fi
+            MAX_JOBS_VALUE="$1"
             ;;
         -h|--help)
             usage
@@ -67,7 +77,7 @@ build_one() {
     fi
 
     echo "Building image for ${arch} using ${env_file} ..."
-    docker compose --env-file "${env_file}" build "${NO_CACHE_ARGS[@]}" api
+    MAX_JOBS="${MAX_JOBS_VALUE}" docker compose --env-file "${env_file}" build "${NO_CACHE_ARGS[@]}" --build-arg MAX_JOBS="${MAX_JOBS_VALUE}" api
 }
 
 case "${TARGET}" in

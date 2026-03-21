@@ -7,6 +7,7 @@
 ### Docker Compose 권장
 
 `flash-attn` 빌드 시간을 매번 로컬 설치에 쓰지 않도록, 아키텍처별 Docker 이미지 빌드를 지원합니다.
+기본 Python 의존성과 `flash-attn` 빌드를 분리해서 관리합니다.
 
 GPU별 권장 env 파일:
 
@@ -32,6 +33,12 @@ docker compose --env-file .env.docker.sm86 up -d --build
 
 ```bash
 ./build_docker.sh all
+```
+
+`flash-attn` 빌드 병렬도 조정:
+
+```bash
+./build_docker.sh sm86 --max-jobs 8
 ```
 
 중지/삭제:
@@ -69,8 +76,9 @@ Docker를 쓰지 않을 경우 기존 방식대로 실행할 수 있습니다.
 
 스크립트가 자동으로:
 1. `uv` 설치 여부 확인 (없으면 설치)
-2. 가상환경 & 의존성 동기화 (`uv sync`)
-3. 서버 포트 입력 받아 실행
+2. 기본 의존성 동기화 (`uv sync`)
+3. 필요 시 `flash-attn` 별도 설치
+4. 서버 포트 입력 받아 실행
 
 ## API 사용법
 

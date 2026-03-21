@@ -51,9 +51,7 @@ if [[ "$INSTALL_FLASH" =~ ^[Yy]$ ]]; then
         exit 1
     fi
 
-    echo "flash-attn 설치를 시도합니다... (MAX_JOBS=$MAX_JOBS_VALUE)"
-    MAX_JOBS="$MAX_JOBS_VALUE" uv pip install --no-build-isolation flash-attn
-    echo "flash-attn 설치 완료."
+    MAX_JOBS="$MAX_JOBS_VALUE" ./install_flash_attn.sh
 else
     echo "flash-attn 설치를 건너뜁니다."
 fi

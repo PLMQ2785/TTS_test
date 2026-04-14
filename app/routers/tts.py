@@ -15,7 +15,7 @@ import soundfile as sf
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Request
 from fastapi.responses import Response
 
-from app.schemas import VoiceInfo, VoiceListResponse
+from app.schemas import VoiceInfo, VoiceListResponse, VoiceRegisterResponse
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ async def voice_clone(
     "/voices",
     summary="Register Voice",
     description="Upload reference audio to create and save a voice profile for later TTS use.",
-    response_model=VoiceInfo,
+    response_model=VoiceRegisterResponse,
 )
 async def register_voice(
     request: Request,
@@ -152,6 +152,7 @@ async def register_voice(
     _ensure_voices_dir()
 
     tmp_path = None
+    started_at = datetime.now(timezone.utc)
     try:
         content = await ref_audio.read()
         tmp_path = _save_upload_to_temp(content, ext)
@@ -186,9 +187,19 @@ async def register_voice(
         meta = {"voice_id": voice_id, "name": name, "created_at": now.isoformat(), "icl_mode": prompt_item.icl_mode}
         (VOICES_DIR / f"{voice_id}.json").write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
 
-        logger.info("Voice registered: id=%s name=%s", voice_id, name)
+        finished_at = datetime.now(timezone.utc)
+        elapsed = (finished_at - started_at).total_seconds()
+        logger.info("Voice registered: id=%s name=%s elapsed=%.3fs", voice_id, name, elapsed)
 
-        return VoiceInfo(voice_id=voice_id, name=name, created_at=now, icl_mode=prompt_item.icl_mode)
+        return VoiceRegisterResponse(
+            voice_id=voice_id,
+            name=name,
+            created_at=now,
+            icl_mode=prompt_item.icl_mode,
+            started_at=started_at,
+            finished_at=finished_at,
+            elapsed_seconds=elapsed,
+        )
 
     except HTTPException:
         raise
@@ -284,6 +295,7 @@ async def synthesize_with_voice(
     if not pt_path.exists():
         raise HTTPException(status_code=404, detail=f"Voice '{voice_id}' not found.")
 
+    started_at = datetime.now(timezone.utc)
     try:
         # Load saved prompt
         data = torch.load(pt_path, map_location=model.device, weights_only=False)
@@ -308,10 +320,19 @@ async def synthesize_with_voice(
         sf.write(buf, wavs[0], sr, format="WAV")
         audio_bytes = buf.getvalue()
 
+        finished_at = datetime.now(timezone.utc)
+        elapsed = (finished_at - started_at).total_seconds()
+        logger.info("synthesize done | voice=%s | elapsed=%.3fs", voice_id, elapsed)
+
         return Response(
             content=audio_bytes,
             media_type="audio/wav",
-            headers={"Content-Disposition": f'attachment; filename="{voice_id}_output.wav"'},
+            headers={
+                "Content-Disposition": f'attachment; filename="{voice_id}_output.wav"',
+                "X-Started-At": started_at.isoformat(),
+                "X-Finished-At": finished_at.isoformat(),
+                "X-Elapsed-Seconds": f"{elapsed:.3f}",
+            },
         )
 
     except HTTPException:

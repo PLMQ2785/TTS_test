@@ -9,6 +9,7 @@ usage() {
 Usage:
   ./build_docker.sh sm86
   ./build_docker.sh sm89
+  ./build_docker.sh sm90
   ./build_docker.sh sm120
   ./build_docker.sh all
 
@@ -20,6 +21,7 @@ Options:
 GPU mapping:
   sm86   RTX 3060 / 3090
   sm89   RTX 4090
+  sm90   H100
   sm120  RTX 5090
 EOF
 }
@@ -55,7 +57,7 @@ while (($# > 0)); do
             usage
             exit 0
             ;;
-        sm86|sm89|sm120|all)
+        sm86|sm89|sm90|sm120|all)
             if [[ -n "${TARGET}" ]]; then
                 echo "Target can only be specified once."
                 exit 1
@@ -82,6 +84,7 @@ TARGET="${TARGET:-sm86}"
 build_one() {
     local arch="$1"
     local env_file=".env.docker.${arch}"
+    local cmd
 
     if [[ ! -f "${env_file}" ]]; then
         echo "Missing env file: ${env_file}"
@@ -89,16 +92,22 @@ build_one() {
     fi
 
     echo "Building image for ${arch} using ${env_file} ..."
-    MAX_JOBS="${MAX_JOBS_VALUE}" docker compose --env-file "${env_file}" build "${NO_CACHE_ARGS[@]}" --build-arg MAX_JOBS="${MAX_JOBS_VALUE}" api
+    cmd=(docker compose --env-file "${env_file}" build)
+    if ((${#NO_CACHE_ARGS[@]} > 0)); then
+        cmd+=("${NO_CACHE_ARGS[@]}")
+    fi
+    cmd+=(--build-arg "MAX_JOBS=${MAX_JOBS_VALUE}" api)
+    "${cmd[@]}"
 }
 
 case "${TARGET}" in
-    sm86|sm89|sm120)
+    sm86|sm89|sm90|sm120)
         build_one "${TARGET}"
         ;;
     all)
         build_one sm86
         build_one sm89
+        build_one sm90
         build_one sm120
         ;;
     -h|--help)

@@ -25,3 +25,10 @@ class VoiceInfo(BaseModel):
 class VoiceListResponse(BaseModel):
     voices: list[VoiceInfo]
     total: int
+
+
+class VoiceRegisterResponse(VoiceInfo):
+    """Voice registration response with timing metrics."""
+    started_at: datetime
+    finished_at: datetime
+    elapsed_seconds: float

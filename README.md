@@ -29,6 +29,12 @@ docker compose --env-file .env.docker.sm86 up -d --build
 ./build_docker.sh sm86
 ```
 
+이미지를 파일로 export할 때:
+
+```bash
+./export_docker.sh sm86 --gzip
+```
+
 전체 아키텍처 이미지를 한 번에 빌드할 때:
 
 ```bash

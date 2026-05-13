@@ -32,3 +32,4 @@ class VoiceRegisterResponse(VoiceInfo):
     started_at: datetime
     finished_at: datetime
     elapsed_seconds: float
+    download_url: str

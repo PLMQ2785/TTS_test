@@ -13,7 +13,7 @@ from pathlib import Path
 import torch
 import soundfile as sf
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 
 from app.schemas import VoiceInfo, VoiceListResponse, VoiceRegisterResponse
 
@@ -199,6 +199,7 @@ async def register_voice(
             started_at=started_at,
             finished_at=finished_at,
             elapsed_seconds=elapsed,
+            download_url=f"/tts/voices/{voice_id}/download",
         )
 
     except HTTPException:
@@ -263,6 +264,28 @@ async def delete_voice(voice_id: str):
 
     logger.info("Voice deleted: %s", voice_id)
     return {"detail": f"Voice '{voice_id}' deleted."}
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Voice Download
+# ═══════════════════════════════════════════════════════════════════
+
+@router.get(
+    "/voices/{voice_id}/download",
+    summary="Download Voice Checkpoint",
+    description="Download the registered voice profile (.pt file).",
+)
+async def download_voice(voice_id: str):
+    """Download a registered voice profile."""
+    pt_path = VOICES_DIR / f"{voice_id}.pt"
+    if not pt_path.exists():
+        raise HTTPException(status_code=404, detail=f"Voice '{voice_id}' not found.")
+    
+    return FileResponse(
+        path=pt_path,
+        media_type="application/octet-stream",
+        filename=f"{voice_id}.pt"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -340,3 +363,87 @@ async def synthesize_with_voice(
     except Exception as e:
         logger.exception("Synthesis with saved voice failed")
         raise HTTPException(status_code=500, detail=f"Synthesis failed: {e}") from e
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  Synthesize with Uploaded Checkpoint
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post(
+    "/synthesize",
+    summary="Synthesize with Uploaded Checkpoint",
+    description="Generate TTS audio using an uploaded voice profile checkpoint (.pt file).",
+    responses={
+        200: {"content": {"audio/wav": {}}, "description": "Generated WAV audio"},
+        400: {"description": "Invalid input"},
+        500: {"description": "Generation failed"},
+    },
+)
+async def synthesize_with_checkpoint(
+    request: Request,
+    checkpoint: UploadFile = File(..., description="Voice profile checkpoint (.pt)"),
+    text: str = Form(..., description="Text to synthesize"),
+    language: str = Form(default="Auto", description="Language: Auto, Chinese, English, Japanese, Korean, etc."),
+):
+    """Generate TTS audio using an uploaded voice profile checkpoint."""
+    from qwen_tts import VoiceClonePromptItem
+
+    if not checkpoint.filename.endswith(".pt"):
+        raise HTTPException(status_code=400, detail="Checkpoint file must have a .pt extension.")
+
+    model = _get_model(request)
+    queue = _get_queue(request)
+
+    tmp_path = None
+    started_at = datetime.now(timezone.utc)
+    try:
+        content = await checkpoint.read()
+        tmp_path = _save_upload_to_temp(content, ".pt")
+
+        # Load saved prompt
+        data = torch.load(tmp_path, map_location=model.device, weights_only=False)
+        prompt_item = VoiceClonePromptItem(
+            ref_code=data["ref_code"],
+            ref_spk_embedding=data["ref_spk_embedding"],
+            x_vector_only_mode=data["x_vector_only_mode"],
+            icl_mode=data["icl_mode"],
+            ref_text=data.get("ref_text"),
+        )
+
+        logger.info("synthesize_with_checkpoint | text=%r | lang=%s", text[:80], language)
+
+        wavs, sr = await queue.submit(
+            model.generate_voice_clone,
+            text=text,
+            language=language,
+            voice_clone_prompt=[prompt_item],
+        )
+
+        buf = io.BytesIO()
+        sf.write(buf, wavs[0], sr, format="WAV")
+        audio_bytes = buf.getvalue()
+
+        finished_at = datetime.now(timezone.utc)
+        elapsed = (finished_at - started_at).total_seconds()
+        logger.info("synthesize_with_checkpoint done | elapsed=%.3fs", elapsed)
+
+        return Response(
+            content=audio_bytes,
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": 'attachment; filename="synthesis_output.wav"',
+                "X-Started-At": started_at.isoformat(),
+                "X-Finished-At": finished_at.isoformat(),
+                "X-Elapsed-Seconds": f"{elapsed:.3f}",
+            },
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Synthesis with uploaded checkpoint failed")
+        raise HTTPException(status_code=500, detail=f"Synthesis failed: {e}") from e
+    finally:
+        if tmp_path:
+            Path(tmp_path).unlink(missing_ok=True)
+

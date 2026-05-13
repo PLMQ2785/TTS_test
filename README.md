@@ -175,7 +175,7 @@ curl -X POST http://localhost:8000/tts/voice-clone \
 | `ref_text` | Text | `레퍼런스 음성에서 말하는 텍스트 내용` |
 | `language` | Text | `Korean` |
 
-> 💡 `ref_text`에 레퍼런스 음성의 실제 대사를 입력하면 ICL(In-Context Learning) 모드가 활성화되어 더 정확한 음성 복제가 됩니다.
+> 💡 `ref_text`에 레퍼런스 음성의 텍스트를 입력하면 ICL(In-Context Learning) 모드가 활성화되어 더 정확한 고품질 음성 복제가 가능합니다.
 
 ---
 
@@ -202,10 +202,12 @@ curl -X POST http://localhost:8000/tts/voice-clone \
   "voice_id": "a1b2c3d4e5f6",
   "name": "내 음성",
   "created_at": "2026-02-10T04:00:00Z",
-  "icl_mode": true
+  "icl_mode": true,
+  "download_url": "/tts/voices/a1b2c3d4e5f6/download"
 }
 ```
 > 📌 `voice_id`를 메모해 두세요 — 이후 TTS 요청에 사용됩니다.
+> 📌 `download_url`을 통해 음성 프로필 파일(.pt)을 다운로드할 수 있습니다.
 
 ---
 
@@ -249,6 +251,40 @@ curl -X POST http://localhost:8000/tts/voice-clone \
 | **URL** | `http://localhost:8000/tts/voices/{voice_id}` |
 
 → Body 없이 Send
+
+---
+
+### 8. 등록된 음성 체크포인트 다운로드
+
+등록된 음성 프로필(`.pt`) 파일을 로컬로 다운로드합니다.
+
+| 항목 | 값 |
+|------|---|
+| **Method** | `GET` |
+| **URL** | `http://localhost:8000/tts/voices/{voice_id}/download` |
+
+→ Send 클릭 → **Postman으로 확인할때는 `Send and Download`**
+
+---
+
+### 9. 업로드된 체크포인트로 TTS 생성
+
+파일로 가지고 있는 음성 프로필(`.pt`)을 직접 업로드하여 TTS를 생성합니다. (voice_id 없이 사용 가능)
+
+| 항목 | 값 |
+|------|---|
+| **Method** | `POST` |
+| **URL** | `http://localhost:8000/tts/synthesize` |
+
+**Body → form-data:**
+
+| Key | Type | Value |
+|-----|------|-------|
+| `checkpoint` | **File** | 다운로드했던 `.pt` 파일 선택 |
+| `text` | Text | `안녕하세요, 반갑습니다.` |
+| `language` | Text | `Korean` |
+
+→ Send 클릭 → wav 바이너리 응답
 
 ---
 
